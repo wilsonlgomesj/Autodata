@@ -1,0 +1,78 @@
+name: deploy-pages
+
+# Builds the frontend in demo mode (VITE_DEMO_MODE=true) and publishes to
+# GitHub Pages. The demo uses a mocked Apollo link + mocked GeoJSON fetcher,
+# so the site has no backend dependency and is safe to share publicly.
+#
+# Note on private repos: Pages for private repositories requires a paid
+# GitHub plan (Pro/Team/Enterprise). If this workflow fails with a 403
+# on the deploy step, either:
+#   1. Make the repository public, OR
+#   2. Use Cloudflare Pages / Netlify / Vercel (each has a free tier that
+#      works with private GitHub repos; they all accept the same build
+#      command: `cd frontend && npm ci && npm run build`).
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+# Needed by the actions/deploy-pages action.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build (demo mode)
+        working-directory: frontend
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_BASE_PATH: "/Autodata/"
+        run: npm run build
+
+      # GitHub Pages serves from the repository root URL only; include a
+      # .nojekyll file so subpaths starting with _ are not filtered.
+      - name: Add .nojekyll
+        run: touch frontend/dist/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

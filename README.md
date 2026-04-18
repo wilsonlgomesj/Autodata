@@ -214,7 +214,49 @@ com reconhecimento MFA-gated, editor de thresholds time-versioned, emissão
 de comandos MQTT, log de notificações. Stack: Tailwind + Apollo +
 react-leaflet + Recharts.
 
-## Demo de cliente — um comando
+## Demo pública (GitHub Pages) — link para enviar ao cliente
+
+O frontend tem um modo **demo offline**: construído com `VITE_DEMO_MODE=true`,
+todas as chamadas de rede são interceptadas e respondem com mocks realistas
+(17 sensores georreferenciados, timeseries geradas a cada carga, alertas
+mistos abertos/resolvidos, GeoJSON do mapa). É ideal para compartilhar um
+link estático com o cliente sem precisar hospedar o stack completo.
+
+### Ativar
+
+1. No GitHub: **Settings → Pages → Build and deployment → Source = GitHub Actions**.
+2. Dar push nesta branch (ou `main`). O workflow `deploy-pages.yml` roda
+   automaticamente e publica em:
+   ```
+   https://<seu-usuario>.github.io/Autodata/
+   ```
+3. Compartilhe o link com o cliente. As mutações (acknowledgeAlert,
+   updateThreshold, issueCommand) **funcionam** na sessão — só não persistem
+   entre reloads.
+
+### Caveat — repositório privado
+
+GitHub Pages em repo privado exige plano **Pro / Team / Enterprise**. Se
+estiver no Free e o repo for privado:
+
+- **Opção 1**: tornar o repo público (nada sensível no código).
+- **Opção 2**: usar **Cloudflare Pages** ou **Netlify** — ambos têm tier
+  gratuito que conecta a repos privados. Build command:
+  ```
+  cd frontend && npm ci && VITE_DEMO_MODE=true VITE_BASE_PATH=/ npm run build
+  ```
+  Output dir: `frontend/dist`.
+
+### Rodar demo offline localmente
+
+```bash
+cd frontend
+npm install
+VITE_DEMO_MODE=true npm run dev
+# http://localhost:5173 — mesma experiência do que vai para o Pages
+```
+
+## Demo técnica local (stack completo) — um comando
 
 ```bash
 make demo

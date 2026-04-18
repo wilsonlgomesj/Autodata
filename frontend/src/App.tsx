@@ -1,6 +1,6 @@
 import { ApolloProvider } from "@apollo/client";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { apollo } from "@/api/client";
+import { BrowserRouter, HashRouter, Route, Routes } from "react-router-dom";
+import { apollo, DEMO_MODE } from "@/api/client";
 import { AuthProvider } from "@/auth/AuthContext";
 import { SiteProvider } from "@/components/SiteContext";
 import { Layout } from "@/components/Layout";
@@ -12,12 +12,17 @@ import { Commands } from "@/pages/Commands";
 import { Thresholds } from "@/pages/Thresholds";
 import { Notifications } from "@/pages/Notifications";
 
+// GitHub Pages does not rewrite unknown paths to index.html — when the demo
+// is hosted there we use HashRouter so /#/alerts works without server-side
+// config. In normal dev we keep the clean BrowserRouter URLs.
+const Router = DEMO_MODE ? HashRouter : BrowserRouter;
+
 export default function App() {
   return (
     <ApolloProvider client={apollo}>
       <AuthProvider>
         <SiteProvider>
-          <BrowserRouter>
+          <Router>
             <Routes>
               <Route element={<Layout />}>
                 <Route index element={<Overview />} />
@@ -37,7 +42,7 @@ export default function App() {
                 />
               </Route>
             </Routes>
-          </BrowserRouter>
+          </Router>
         </SiteProvider>
       </AuthProvider>
     </ApolloProvider>

@@ -2,6 +2,7 @@ import { useQuery } from "@apollo/client";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { SITES } from "@/api/queries";
+import { DemoBanner } from "./DemoBanner";
 import { useSite } from "./SiteContext";
 
 interface Site {
@@ -26,6 +27,7 @@ export function Layout() {
 
   return (
     <div className="h-full flex flex-col">
+      <DemoBanner />
       <header className="bg-slate-900 text-slate-100 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-6">
           <div className="font-semibold tracking-tight">
