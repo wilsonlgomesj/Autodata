@@ -1,0 +1,232 @@
+# Plano de Instrumentação — Barragem X (exemplo realista)
+# Este arquivo deve ser consistente com metadata/seeds/barragem_x.sql
+# e referenciar apenas sensor_types definidos em docs/conventions.md.
+
+schema: geo.instrumentation.v1
+
+site:
+  id: mineradora-x-barragem-norte
+  org_id: mineradora-x
+  display_name: "Complexo Norte — Barragem X"
+  country: BR
+  timezone: America/Sao_Paulo
+  location:
+    lat: -19.9167
+    lon: -43.9345
+    crs_epsg: 4326
+
+structures:
+  - id: barragem-principal
+    kind: earth_dam
+    display_name: "Barragem Principal"
+    height_m: 45.0
+    crest_length_m: 600.0
+    reservoir_vol_hm3: 12.0
+    risk_class: B
+    potential_damage: alto
+    commissioned_on: 2018-09-15
+    sections:
+      - id: sec-01-ombreira-esq
+        display_name: "Seção 1 — Ombreira Esquerda"
+        chainage_m: 50.0
+      - id: sec-02-centro
+        display_name: "Seção 2 — Centro"
+        chainage_m: 300.0
+      - id: sec-03-ombreira-dir
+        display_name: "Seção 3 — Ombreira Direita"
+        chainage_m: 550.0
+
+devices:
+  - id: gw-bx-001
+    kind: gateway
+    model: "Advantech UNO-137"
+    serial_number: "SN-GW-001-ABCD"
+    firmware: "edge-fw-3.2.0"
+    installed_on: 2024-06-01
+    location: { lat: -19.9169, lon: -43.9340, elev_m: 820.0 }
+
+  - id: rtu-bx-e1
+    kind: rtu
+    parent_gateway: gw-bx-001
+    model: "Campbell CR6"
+    serial_number: "SN-RTU-E1-0001"
+    firmware: "rtu-fw-2.4.1"
+    installed_on: 2024-06-05
+    location: { lat: -19.9170, lon: -43.9355, elev_m: 818.5 }
+
+  - id: rtu-bx-c1
+    kind: rtu
+    parent_gateway: gw-bx-001
+    model: "Campbell CR6"
+    serial_number: "SN-RTU-C1-0001"
+    firmware: "rtu-fw-2.4.1"
+    installed_on: 2024-06-05
+    location: { lat: -19.9168, lon: -43.9340, elev_m: 819.2 }
+
+  - id: rtu-bx-d1
+    kind: rtu
+    parent_gateway: gw-bx-001
+    model: "Campbell CR6"
+    serial_number: "SN-RTU-D1-0001"
+    firmware: "rtu-fw-2.4.1"
+    installed_on: 2024-06-05
+    location: { lat: -19.9166, lon: -43.9325, elev_m: 818.8 }
+
+sensors:
+  # Piezômetros VW — 10 no total
+  - { id: pz-sec01-fund-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-01-ombreira-esq, device: rtu-bx-e1,
+      display_name: "PZ fundação S1",
+      placement: { elev_m: 775.0, depth_m: 40.0, borehole_id: "SM-01-PZ-40" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-001", installed_on: 2024-06-10 }
+  - { id: pz-sec01-cont-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-01-ombreira-esq, device: rtu-bx-e1,
+      display_name: "PZ contato S1",
+      placement: { elev_m: 785.0, depth_m: 30.0, borehole_id: "SM-01-PZ-30" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-002", installed_on: 2024-06-10 }
+  - { id: pz-sec01-nuc-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-01-ombreira-esq, device: rtu-bx-e1,
+      display_name: "PZ núcleo médio S1",
+      placement: { elev_m: 800.0, depth_m: 15.0, borehole_id: "SM-01-PZ-15" },
+      range: { min: 0, max: 500 }, qa: { step_max: 40, rate_max_per_s: 0.4 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-003", installed_on: 2024-06-10 }
+
+  - { id: pz-sec02-fund-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "PZ fundação S2 (gêmeo A)",
+      placement: { elev_m: 775.0, depth_m: 40.0, borehole_id: "SM-02-PZ-40A" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-004", installed_on: 2024-06-11,
+      twin: pz-sec02-fund-02 }
+  - { id: pz-sec02-fund-02, type: piezometer_vw, structure: barragem-principal,
+      section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "PZ fundação S2 (gêmeo B)",
+      placement: { elev_m: 775.0, depth_m: 40.0, borehole_id: "SM-02-PZ-40B" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-005", installed_on: 2024-06-11,
+      twin: pz-sec02-fund-01 }
+  - { id: pz-sec02-cont-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "PZ contato S2",
+      placement: { elev_m: 785.0, depth_m: 30.0, borehole_id: "SM-02-PZ-30" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-006", installed_on: 2024-06-11 }
+  - { id: pz-sec02-nuc-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "PZ núcleo médio S2",
+      placement: { elev_m: 800.0, depth_m: 15.0, borehole_id: "SM-02-PZ-15" },
+      range: { min: 0, max: 500 }, qa: { step_max: 40, rate_max_per_s: 0.4 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-007", installed_on: 2024-06-11 }
+
+  - { id: pz-sec03-fund-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-03-ombreira-dir, device: rtu-bx-d1,
+      display_name: "PZ fundação S3",
+      placement: { elev_m: 775.0, depth_m: 40.0, borehole_id: "SM-03-PZ-40" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-008", installed_on: 2024-06-12 }
+  - { id: pz-sec03-cont-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-03-ombreira-dir, device: rtu-bx-d1,
+      display_name: "PZ contato S3",
+      placement: { elev_m: 785.0, depth_m: 30.0, borehole_id: "SM-03-PZ-30" },
+      range: { min: 0, max: 700 }, qa: { step_max: 50, rate_max_per_s: 0.5 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-009", installed_on: 2024-06-12 }
+  - { id: pz-sec03-nuc-01, type: piezometer_vw, structure: barragem-principal,
+      section: sec-03-ombreira-dir, device: rtu-bx-d1,
+      display_name: "PZ núcleo médio S3",
+      placement: { elev_m: 800.0, depth_m: 15.0, borehole_id: "SM-03-PZ-15" },
+      range: { min: 0, max: 500 }, qa: { step_max: 40, rate_max_per_s: 0.4 },
+      model: "Geokon 4500S", serial_number: "SN-PZ-010", installed_on: 2024-06-12 }
+
+  # Inclinômetros MEMS — 5 no total
+  - { id: ipi-crista-sec01-01, type: inclinometer_ipi_mems,
+      structure: barragem-principal, section: sec-01-ombreira-esq, device: rtu-bx-e1,
+      display_name: "IPI crista S1",
+      placement: { elev_m: 820.0, depth_m: 10.0, borehole_id: "SM-01-IPI-01" },
+      range: { min: -15, max: 15 }, qa: { step_max: 0.5, rate_max_per_s: 0.001 },
+      model: "DGSI MEMS IPI", serial_number: "SN-IPI-001", installed_on: 2024-06-14 }
+  - { id: ipi-crista-sec02-01, type: inclinometer_ipi_mems,
+      structure: barragem-principal, section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "IPI crista S2",
+      placement: { elev_m: 820.0, depth_m: 10.0, borehole_id: "SM-02-IPI-01" },
+      range: { min: -15, max: 15 }, qa: { step_max: 0.5, rate_max_per_s: 0.001 },
+      model: "DGSI MEMS IPI", serial_number: "SN-IPI-002", installed_on: 2024-06-14 }
+  - { id: ipi-crista-sec03-01, type: inclinometer_ipi_mems,
+      structure: barragem-principal, section: sec-03-ombreira-dir, device: rtu-bx-d1,
+      display_name: "IPI crista S3",
+      placement: { elev_m: 820.0, depth_m: 10.0, borehole_id: "SM-03-IPI-01" },
+      range: { min: -15, max: 15 }, qa: { step_max: 0.5, rate_max_per_s: 0.001 },
+      model: "DGSI MEMS IPI", serial_number: "SN-IPI-003", installed_on: 2024-06-14 }
+  - { id: ipi-jusante-sec02-01, type: inclinometer_ipi_mems,
+      structure: barragem-principal, section: sec-02-centro, device: rtu-bx-c1,
+      display_name: "IPI talude jusante S2",
+      placement: { elev_m: 800.0, depth_m: 8.0, borehole_id: "SM-02-IPI-JUS" },
+      range: { min: -15, max: 15 }, qa: { step_max: 0.5, rate_max_per_s: 0.001 },
+      model: "DGSI MEMS IPI", serial_number: "SN-IPI-004", installed_on: 2024-06-14 }
+  - { id: ipi-jusante-sec03-01, type: inclinometer_ipi_mems,
+      structure: barragem-principal, section: sec-03-ombreira-dir, device: rtu-bx-d1,
+      display_name: "IPI talude jusante S3",
+      placement: { elev_m: 800.0, depth_m: 8.0, borehole_id: "SM-03-IPI-JUS" },
+      range: { min: -15, max: 15 }, qa: { step_max: 0.5, rate_max_per_s: 0.001 },
+      model: "DGSI MEMS IPI", serial_number: "SN-IPI-005", installed_on: 2024-06-14 }
+
+  # Pluviômetros — 2 no total
+  - { id: rain-crista-01, type: rain_gauge_tipping,
+      structure: barragem-principal, section: sec-02-centro, device: gw-bx-001,
+      display_name: "Pluviômetro crista",
+      placement: { elev_m: 820.0, depth_m: 0.0 },
+      range: { min: 0, max: 300 }, qa: { step_max: 300, rate_max_per_s: 0.1 },
+      model: "Davis Tipping Bucket", serial_number: "SN-RAIN-001", installed_on: 2024-06-15 }
+  - { id: rain-jusante-01, type: rain_gauge_tipping,
+      structure: barragem-principal, section: sec-02-centro, device: gw-bx-001,
+      display_name: "Pluviômetro pé de jusante",
+      placement: { elev_m: 778.0, depth_m: 0.0 },
+      range: { min: 0, max: 300 }, qa: { step_max: 300, rate_max_per_s: 0.1 },
+      model: "Davis Tipping Bucket", serial_number: "SN-RAIN-002", installed_on: 2024-06-15 }
+
+thresholds:
+  - { sensor: pz-sec01-fund-01, metric: pressure_kpa, effective_from: 2024-07-01T00:00:00Z,
+      direction: above, hysteresis_pct: 5.0,
+      levels: { atencao: 380, alerta: 420, emergencia_n1: 460, emergencia_n2: 500 },
+      approved_by: eng-geotec-chief, approval_ref: PSB-BX-REV3 }
+  - { sensor: pz-sec02-fund-01, metric: pressure_kpa, effective_from: 2024-07-01T00:00:00Z,
+      direction: above, hysteresis_pct: 5.0,
+      levels: { atencao: 380, alerta: 420, emergencia_n1: 460, emergencia_n2: 500 },
+      approved_by: eng-geotec-chief, approval_ref: PSB-BX-REV3 }
+  - { sensor: pz-sec02-fund-02, metric: pressure_kpa, effective_from: 2024-07-01T00:00:00Z,
+      direction: above, hysteresis_pct: 5.0,
+      levels: { atencao: 380, alerta: 420, emergencia_n1: 460, emergencia_n2: 500 },
+      approved_by: eng-geotec-chief, approval_ref: PSB-BX-REV3 }
+  - { sensor: pz-sec03-fund-01, metric: pressure_kpa, effective_from: 2024-07-01T00:00:00Z,
+      direction: above, hysteresis_pct: 5.0,
+      levels: { atencao: 380, alerta: 420, emergencia_n1: 460, emergencia_n2: 500 },
+      approved_by: eng-geotec-chief, approval_ref: PSB-BX-REV3 }
+  - { sensor: ipi-crista-sec02-01, metric: tilt_x_deg, effective_from: 2024-07-01T00:00:00Z,
+      direction: absolute, hysteresis_pct: 10.0,
+      levels: { atencao: 0.15, alerta: 0.25, emergencia_n1: 0.40, emergencia_n2: 0.60 },
+      approved_by: eng-geotec-chief, approval_ref: PSB-BX-REV3 }
+
+sampling_modes:
+  - mode: NORMAL
+    sensors:
+      piezometer_vw: "PT15M"
+      inclinometer_ipi_mems: "PT30M"
+      rain_gauge_tipping: event
+  - mode: ATENCAO
+    sensors:
+      piezometer_vw: "PT5M"
+      inclinometer_ipi_mems: "PT10M"
+  - mode: ALERTA
+    sensors:
+      piezometer_vw: "PT1M"
+      inclinometer_ipi_mems: "PT5M"
+  - mode: EMERGENCIA
+    sensors:
+      piezometer_vw: "PT30S"
+      inclinometer_ipi_mems: "PT1M"
+
+communication:
+  primary: { kind: cellular_4g, operator: Vivo, apn: iot-privada.vivo.br }
+  backup:  { kind: satellite_starlink }
+  field:   { kind: lorawan, frequency_mhz: 915, class: C }

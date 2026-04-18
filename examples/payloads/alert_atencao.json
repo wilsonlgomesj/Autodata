@@ -1,0 +1,26 @@
+{
+  "schema": "geo.alert.v1",
+  "msg_id": "QMCNH3AM0K0J4ZG0MENKY4JJBX",
+  "site": "mineradora-x-barragem-norte",
+  "structure": "barragem-principal",
+  "section": "sec-02-centro",
+  "level": "ATENCAO",
+  "rule_id": "pz-fund-atencao",
+  "rule_version": "v1.0.0",
+  "t_triggered": "2026-04-18T14:10:00.000Z",
+  "t_resolved": null,
+  "sensors": ["pz-sec02-fund-01"],
+  "evidence": {
+    "summary": "PZ fundação S2 atingiu 385 kPa (limite atenção 380 kPa) com persistência de 1h.",
+    "samples": [
+      {
+        "sensor": "pz-sec02-fund-01",
+        "t_sample": "2026-04-18T14:10:00.000Z",
+        "values": { "pressure_kpa": 385.2 },
+        "threshold": 380.0,
+        "observed": 385.2
+      }
+    ]
+  },
+  "actions_taken": ["email", "create_incident", "increase_sampling"]
+}

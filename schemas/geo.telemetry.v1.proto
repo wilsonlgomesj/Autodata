@@ -1,0 +1,120 @@
+// Geotechnical Telemetry — Protobuf schema
+// Version: v1 (see docs/conventions.md §5 for versioning policy)
+//
+// Wire encoding used for bandwidth-constrained links (LoRaWAN, Iridium SBD).
+// The JSON Schema variant in geo.telemetry.v1.schema.json is the canonical
+// contract; this .proto is a 1:1 mirror for efficient transport.
+
+syntax = "proto3";
+
+package autodata.geo.telemetry.v1;
+
+option go_package = "github.com/wilsonlgomesj/autodata/gen/go/geo/telemetry/v1;telemetryv1";
+
+enum SensorType {
+  SENSOR_TYPE_UNSPECIFIED = 0;
+  PIEZOMETER_VW = 1;
+  PIEZOMETER_CASAGRANDE = 2;
+  INCLINOMETER_IPI_MEMS = 3;
+  INCLINOMETER_PROBE = 4;
+  EXTENSOMETER_MAGNETIC = 5;
+  EXTENSOMETER_MULTIPOINT = 6;
+  LOAD_CELL = 7;
+  SETTLEMENT_CELL = 8;
+  GNSS_ROVER = 9;
+  TOTAL_STATION_PRISM = 10;
+  RAIN_GAUGE_TIPPING = 11;
+  FLOW_METER_WEIR = 12;
+  SEISMOGRAPH_MEMS = 13;
+  FIBER_OPTIC_DTS = 14;
+  FIBER_OPTIC_DSS = 15;
+  WEATHER_STATION = 16;
+  THERMISTOR_STRING = 17;
+  POWER_MONITOR = 18;
+}
+
+enum QualityCode {
+  QUALITY_CODE_UNSPECIFIED = 0;
+  GOOD = 1;
+  SUSPECT = 2;
+  BAD = 3;
+  MISSING = 4;
+  CALIBRATING = 5;
+  MAINTENANCE = 6;
+}
+
+enum QualityFlag {
+  QUALITY_FLAG_UNSPECIFIED = 0;
+  RANGE = 1;
+  STEP = 2;
+  STUCK = 3;
+  RATE = 4;
+  CROSS_SENSOR = 5;
+  BRACKETING = 6;
+  GAP = 7;
+  LOW_VOLTAGE = 8;
+  SIG_INVALID = 9;
+  SCHEMA_DOWNGRADE = 10;
+}
+
+message Quality {
+  QualityCode code = 1;
+  repeated QualityFlag flags = 2;
+}
+
+message Power {
+  double v_bat = 1;
+  double v_panel = 2;
+  double i_charge_a = 3;
+  double i_load_a = 4;
+  double soc_pct = 5;
+}
+
+// A measurement value is either a scalar or an array (for distributed sensors
+// like DTS fiber, thermistor strings, or multipoint extensometers).
+message Value {
+  oneof kind {
+    double scalar = 1;
+    ValueArray array = 2;
+  }
+}
+
+message ValueArray {
+  repeated double items = 1;
+}
+
+message Measurement {
+  // Constant: "geo.telemetry.v1"
+  string schema = 1;
+
+  // ULID, 26 chars
+  string msg_id = 2;
+
+  string site = 3;
+  string gateway = 4;
+  string device = 5;
+  string sensor = 6;
+  SensorType sensor_type = 7;
+
+  // RFC 3339 UTC ms. Protobuf Timestamp would be more idiomatic but we keep
+  // string for 1:1 mapping with the JSON Schema canonical form used for
+  // signature computation.
+  string t_sample = 8;
+  string t_ingest = 9;
+
+  uint64 seq = 10;
+
+  // Map of value name -> Value. Keys per sensor_type are specified in
+  // docs/conventions.md §2.
+  map<string, Value> values = 11;
+
+  Quality quality = 12;
+  Power power = 13;
+
+  int32 rssi_dbm = 14;
+  string firmware = 15;
+
+  // Ed25519 signature over the canonical JSON form excluding 'sig' and
+  // 't_ingest'. Format: "ed25519:<base64>".
+  string sig = 16;
+}

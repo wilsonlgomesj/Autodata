@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autodata.example.com/schemas/geo.telemetry.v1.schema.json",
+  "title": "Geotechnical Telemetry Measurement",
+  "description": "Canonical payload for a single telemetry sample from a geotechnical sensor.",
+  "type": "object",
+  "required": [
+    "schema",
+    "msg_id",
+    "site",
+    "gateway",
+    "device",
+    "sensor",
+    "sensor_type",
+    "t_sample",
+    "seq",
+    "values",
+    "quality",
+    "firmware",
+    "sig"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geo.telemetry.v1"
+    },
+    "msg_id": {
+      "description": "ULID, 26 chars, Crockford base32, case-insensitive.",
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "site": { "$ref": "#/$defs/identifier" },
+    "gateway": { "$ref": "#/$defs/identifier" },
+    "device": { "$ref": "#/$defs/identifier" },
+    "sensor": { "$ref": "#/$defs/identifier" },
+    "sensor_type": { "$ref": "#/$defs/sensor_type" },
+    "t_sample": { "$ref": "#/$defs/rfc3339_utc_ms" },
+    "t_ingest": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/rfc3339_utc_ms" }
+      ]
+    },
+    "seq": {
+      "description": "Monotonic per-sensor sequence from the RTU. Resets only on device re-provisioning.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "values": {
+      "description": "Measurement values in canonical SI units. Keys depend on sensor_type (see conventions.md).",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number" },
+          {
+            "type": "array",
+            "items": { "type": "number" }
+          }
+        ]
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["code"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["GOOD", "SUSPECT", "BAD", "MISSING", "CALIBRATING", "MAINTENANCE"]
+        },
+        "flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "RANGE", "STEP", "STUCK", "RATE", "CROSS_SENSOR",
+              "BRACKETING", "GAP", "LOW_VOLTAGE", "SIG_INVALID", "SCHEMA_DOWNGRADE"
+            ]
+          }
+        }
+      }
+    },
+    "power": {
+      "description": "Optional power telemetry piggybacked on sensor messages (from RTU power monitor).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "v_bat": { "type": "number", "minimum": 0, "maximum": 30 },
+        "v_panel": { "type": "number", "minimum": 0, "maximum": 60 },
+        "i_charge_a": { "type": "number" },
+        "i_load_a": { "type": "number" },
+        "soc_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "rssi_dbm": {
+      "description": "Link quality of the last hop (LoRa or cellular).",
+      "type": "integer",
+      "minimum": -140,
+      "maximum": 0
+    },
+    "firmware": {
+      "type": "string",
+      "pattern": "^[a-z0-9._-]{1,32}$"
+    },
+    "sig": {
+      "description": "Ed25519 signature over the canonical JSON form of this message excluding 'sig' and 't_ingest'. Format: 'ed25519:<base64>'.",
+      "type": "string",
+      "pattern": "^ed25519:[A-Za-z0-9+/=]{80,100}$"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "rfc3339_utc_ms": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "sensor_type": {
+      "type": "string",
+      "enum": [
+        "piezometer_vw",
+        "piezometer_casagrande",
+        "inclinometer_ipi_mems",
+        "inclinometer_probe",
+        "extensometer_magnetic",
+        "extensometer_multipoint",
+        "load_cell",
+        "settlement_cell",
+        "gnss_rover",
+        "total_station_prism",
+        "rain_gauge_tipping",
+        "flow_meter_weir",
+        "seismograph_mems",
+        "fiber_optic_dts",
+        "fiber_optic_dss",
+        "weather_station",
+        "thermistor_string",
+        "power_monitor"
+      ]
+    }
+  }
+}

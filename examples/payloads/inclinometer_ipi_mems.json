@@ -1,0 +1,23 @@
+{
+  "schema": "geo.telemetry.v1",
+  "msg_id": "SAGF0WBQ9TQYT0Y77M1FANY7XF",
+  "site": "mineradora-x-barragem-norte",
+  "gateway": "gw-bx-001",
+  "device": "rtu-bx-c1",
+  "sensor": "ipi-crista-sec02-01",
+  "sensor_type": "inclinometer_ipi_mems",
+  "t_sample": "2026-04-18T13:30:00.000Z",
+  "t_ingest": null,
+  "seq": 50123,
+  "values": {
+    "tilt_x_deg": 0.082,
+    "tilt_y_deg": -0.015,
+    "temp_c": 23.1
+  },
+  "quality": {
+    "code": "GOOD"
+  },
+  "rssi_dbm": -82,
+  "firmware": "rtu-fw-2.4.1",
+  "sig": "ed25519:SmdZl6n0zG3Lac4U21vZlXCYO0BimN4nJDGXKXX4WVIilT8QcttBpXJO96Sqd/NxjdyNQxcqLPaz+VyMQYgo0A=="
+}

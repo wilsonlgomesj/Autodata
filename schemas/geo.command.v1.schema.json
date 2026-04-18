@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autodata.example.com/schemas/geo.command.v1.schema.json",
+  "title": "Downlink Command",
+  "description": "Command issued from backend to a device (gateway or RTU). Expects matching geo.ack.v1.",
+  "type": "object",
+  "required": ["schema", "msg_id", "correlation_id", "site", "target", "action", "issued_by", "t_issued"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "type": "string", "const": "geo.command.v1" },
+    "msg_id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "correlation_id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "site": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+    "target": {
+      "description": "Dotted path identifying what is being addressed: gateway, device, or sensor.",
+      "type": "object",
+      "required": ["gateway"],
+      "additionalProperties": false,
+      "properties": {
+        "gateway": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+        "device": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+        "sensor": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" }
+      }
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "set_sampling_mode",
+        "firmware_update",
+        "reboot",
+        "calibrate",
+        "set_threshold",
+        "clear_buffer",
+        "request_snapshot",
+        "enable_maintenance",
+        "disable_maintenance"
+      ]
+    },
+    "params": {
+      "type": "object",
+      "description": "Action-specific parameters. Keys are constrained by action (validated server-side)."
+    },
+    "issued_by": {
+      "type": "string",
+      "description": "User or service account that issued the command (audited).",
+      "maxLength": 128
+    },
+    "t_issued": { "$ref": "geo.telemetry.v1.schema.json#/$defs/rfc3339_utc_ms" },
+    "ttl_s": {
+      "description": "Command expires if not executed within this window.",
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 86400,
+      "default": 3600
+    },
+    "sig": { "type": "string", "pattern": "^ed25519:[A-Za-z0-9+/=]{80,100}$" }
+  }
+}

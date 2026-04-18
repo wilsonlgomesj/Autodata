@@ -1,0 +1,131 @@
+# Plano de Instrumentação — Template
+#
+# Documento declarativo que descreve o conjunto completo de instrumentação
+# de um site. Fonte única para:
+#   - provisionamento (gera INSERTs no Postgres)
+#   - geração de tópicos MQTT e ACLs
+#   - documentação do PSB (Plano de Segurança de Barragem)
+#
+# Consumido pelo validador: tools/validate.py plan instrumentation/<site>.yaml
+#
+# Campos marcados com (*) são obrigatórios.
+
+schema: geo.instrumentation.v1          # (*) versão do schema deste YAML
+
+site:                                    # (*)
+  id: example-site                       # (*) identifier; ver conventions.md §1.1
+  org_id: example-org                    # (*)
+  display_name: "Exemplo de Site"        # (*)
+  country: BR                            # (*) ISO 3166-1 alpha-2
+  timezone: America/Sao_Paulo            # (*) IANA tz
+  location:
+    lat: -20.0000
+    lon: -44.0000
+    crs_epsg: 4326
+
+structures:                              # (*) 1..N estruturas
+  - id: barragem-principal               # (*)
+    kind: earth_dam                      # (*) enum: earth_dam | rockfill_dam | tailings_dam | concrete_dam | slope_mining | slope_infrastructure | retaining_wall
+    display_name: "Barragem Principal"
+    height_m: 40.0
+    crest_length_m: 500.0
+    reservoir_vol_hm3: 10.0
+    risk_class: B                        # A, B, C conforme ANM
+    potential_damage: alto               # alto | medio | baixo
+    commissioned_on: 2020-01-01
+
+    sections:                            # (*) 1..N seções instrumentadas
+      - id: sec-01
+        display_name: "Seção 1"
+        chainage_m: 100.0
+        notes: "Seção de referência"
+
+devices:                                 # (*) gateways e RTUs
+  - id: gw-ex-001                        # (*)
+    kind: gateway                        # (*) enum: gateway | rtu | radio_repeater
+    model: "Advantech UNO-137"
+    serial_number: "SN-GW-001"
+    firmware: "edge-fw-3.2.0"
+    installed_on: 2024-01-01
+    location:
+      lat: -20.0000
+      lon: -44.0000
+      elev_m: 800.0
+
+  - id: rtu-ex-001
+    kind: rtu
+    parent_gateway: gw-ex-001            # (*) obrigatório se kind=rtu
+    model: "Campbell CR6"
+    serial_number: "SN-RTU-001"
+    firmware: "rtu-fw-2.4.1"
+    installed_on: 2024-01-05
+
+sensors:                                 # (*) 1..N sensores
+  - id: pz-sec01-fund-01                 # (*) identifier + prefixo do sensor_type
+    type: piezometer_vw                  # (*) enum de docs/conventions.md §2
+    structure: barragem-principal        # (*) FK → structures[].id
+    section: sec-01                      # (*) FK → structures[].sections[].id
+    device: rtu-ex-001                   # (*) FK → devices[].id
+    display_name: "PZ fundação S1"
+    placement:
+      elev_m: 775.0
+      depth_m: 25.0
+      borehole_id: "BH-01"
+    range:
+      min: 0
+      max: 700                           # unidade canônica do sensor_type
+    qa:
+      step_max: 50                       # max |Δ| entre amostras consecutivas
+      rate_max_per_s: 0.5
+    model: "Geokon 4500S"
+    serial_number: "SN-PZ-001"
+    installed_on: 2024-01-10
+    # Opcional: sensor-par para cross-check. Deve ser mútuo: o sensor referenciado
+    # aqui precisa ter 'twin: pz-sec01-fund-01' de volta. Exemplo comentado:
+    # twin: pz-sec01-fund-02
+
+thresholds:                              # regras de alerta por sensor/métrica
+  - sensor: pz-sec01-fund-01
+    metric: pressure_kpa                 # (*) deve ser uma das keys do sensor_type
+    effective_from: 2024-02-01T00:00:00Z
+    direction: above                     # above | below | absolute
+    hysteresis_pct: 5.0
+    levels:
+      atencao: 380
+      alerta: 420
+      emergencia_n1: 460
+      emergencia_n2: 500
+    approved_by: eng-geotec-chief
+    approval_ref: PSB-EX-REV1
+
+sampling_modes:                          # taxas por modo operacional
+  - mode: NORMAL                         # (*)
+    sensors:
+      piezometer_vw: "PT15M"             # ISO 8601 duration
+      inclinometer_ipi_mems: "PT30M"
+      rain_gauge_tipping: event          # literal: evento, não periódico
+      weather_station: "PT10M"
+  - mode: ATENCAO
+    sensors:
+      piezometer_vw: "PT5M"
+      inclinometer_ipi_mems: "PT10M"
+  - mode: ALERTA
+    sensors:
+      piezometer_vw: "PT1M"
+      inclinometer_ipi_mems: "PT5M"
+  - mode: EMERGENCIA
+    sensors:
+      piezometer_vw: "PT30S"
+      inclinometer_ipi_mems: "PT1M"
+
+communication:                           # arquitetura de enlace
+  primary:
+    kind: cellular_4g
+    operator: example-carrier
+    apn: private-apn
+  backup:
+    kind: satellite_starlink
+  field:
+    kind: lorawan
+    frequency_mhz: 915
+    class: C                             # classe LoRaWAN do gateway

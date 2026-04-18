@@ -1,0 +1,38 @@
+{
+  "schema": "geo.health.v1",
+  "msg_id": "XGX9G9ZN0086VC375DCPZK9K60",
+  "site": "mineradora-x-barragem-norte",
+  "gateway": "gw-bx-001",
+  "device": "gw-bx-001",
+  "t_sample": "2026-04-18T13:45:00.000Z",
+  "t_ingest": null,
+  "uptime_s": 2592000,
+  "firmware": "edge-fw-3.2.0",
+  "cpu_pct": 12.4,
+  "ram_pct": 38.0,
+  "disk_pct": 22.5,
+  "enclosure_temp_c": 38.2,
+  "power": {
+    "v_bat": 13.2,
+    "v_panel": 18.1,
+    "i_charge_a": 3.2,
+    "i_load_a": 0.35,
+    "soc_pct": 94.0
+  },
+  "link": {
+    "kind": "cellular_4g",
+    "rssi_dbm": -78,
+    "snr_db": 12.5,
+    "operator": "Vivo"
+  },
+  "buffer": {
+    "pending_msgs": 0,
+    "oldest_t_sample": "2026-04-18T13:45:00.000Z",
+    "disk_used_pct": 22.5
+  },
+  "time_sync": {
+    "source": "gnss_pps",
+    "offset_ms": 0.2
+  },
+  "sig": "ed25519:SmdZl6n0zG3Lac4U21vZlXCYO0BimN4nJDGXKXX4WVIilT8QcttBpXJO96Sqd/NxjdyNQxcqLPaz+VyMQYgo0A=="
+}

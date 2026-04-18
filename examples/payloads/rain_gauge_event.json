@@ -1,0 +1,21 @@
+{
+  "schema": "geo.telemetry.v1",
+  "msg_id": "KZQG4HCPXN2WPDQRHF9S9YW9ZX",
+  "site": "mineradora-x-barragem-norte",
+  "gateway": "gw-bx-001",
+  "device": "gw-bx-001",
+  "sensor": "rain-crista-01",
+  "sensor_type": "rain_gauge_tipping",
+  "t_sample": "2026-04-18T14:02:11.500Z",
+  "t_ingest": null,
+  "seq": 98231,
+  "values": {
+    "rainfall_mm": 0.2,
+    "cumulative_mm": 47.8
+  },
+  "quality": {
+    "code": "GOOD"
+  },
+  "firmware": "edge-fw-3.2.0",
+  "sig": "ed25519:QyUJ+YkIdmY9NVJH4WwBviZGbFNEJQ+8kNAU5fkFD8IxWd3+N0hqccXTB36qKMwn9AY/reDldDscyA0zEhVkfw=="
+}

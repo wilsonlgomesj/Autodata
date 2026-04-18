@@ -1,0 +1,18 @@
+{
+  "schema": "geo.command.v1",
+  "msg_id": "SFKW8DY9JSQKQ73KM4CA3ZA557",
+  "correlation_id": "8ZWVCRWB0S41ECM9PPW15DJEX1",
+  "site": "mineradora-x-barragem-norte",
+  "target": {
+    "gateway": "gw-bx-001",
+    "device": "rtu-bx-c1"
+  },
+  "action": "set_sampling_mode",
+  "params": {
+    "mode": "ATENCAO"
+  },
+  "issued_by": "svc-alert",
+  "t_issued": "2026-04-18T14:10:00.500Z",
+  "ttl_s": 600,
+  "sig": "ed25519:QyUJ+YkIdmY9NVJH4WwBviZGbFNEJQ+8kNAU5fkFD8IxWd3+N0hqccXTB36qKMwn9AY/reDldDscyA0zEhVkfw=="
+}

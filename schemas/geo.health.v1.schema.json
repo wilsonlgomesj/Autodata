@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autodata.example.com/schemas/geo.health.v1.schema.json",
+  "title": "Device Health Heartbeat",
+  "description": "Periodic health telemetry from a gateway or RTU. Distinct from sensor measurement.",
+  "type": "object",
+  "required": [
+    "schema", "msg_id", "site", "gateway", "device", "t_sample", "uptime_s", "firmware", "sig"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "type": "string", "const": "geo.health.v1" },
+    "msg_id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "site": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+    "gateway": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+    "device": { "$ref": "geo.telemetry.v1.schema.json#/$defs/identifier" },
+    "t_sample": { "$ref": "geo.telemetry.v1.schema.json#/$defs/rfc3339_utc_ms" },
+    "t_ingest": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "geo.telemetry.v1.schema.json#/$defs/rfc3339_utc_ms" }
+      ]
+    },
+    "uptime_s": { "type": "integer", "minimum": 0 },
+    "firmware": { "type": "string", "pattern": "^[a-z0-9._-]{1,32}$" },
+    "cpu_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "ram_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "disk_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "enclosure_temp_c": { "type": "number" },
+    "power": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "v_bat": { "type": "number", "minimum": 0, "maximum": 30 },
+        "v_panel": { "type": "number", "minimum": 0, "maximum": 60 },
+        "i_charge_a": { "type": "number" },
+        "i_load_a": { "type": "number" },
+        "soc_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["lora", "cellular_4g", "cellular_5g", "satellite_iridium", "satellite_starlink", "uhf", "ethernet"]
+        },
+        "rssi_dbm": { "type": "integer", "minimum": -140, "maximum": 0 },
+        "snr_db": { "type": "number" },
+        "operator": { "type": "string", "maxLength": 32 }
+      }
+    },
+    "buffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pending_msgs": { "type": "integer", "minimum": 0 },
+        "oldest_t_sample": { "$ref": "geo.telemetry.v1.schema.json#/$defs/rfc3339_utc_ms" },
+        "disk_used_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "time_sync": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["gnss_pps", "ptp", "ntp", "rtc_only"]
+        },
+        "offset_ms": { "type": "number" }
+      }
+    },
+    "sig": { "type": "string", "pattern": "^ed25519:[A-Za-z0-9+/=]{80,100}$" }
+  }
+}

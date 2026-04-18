@@ -1,0 +1,41 @@
+name: validate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r tools/requirements.txt
+
+      - name: Run full validation (schemas + plans + crosscheck)
+        run: python3 tools/validate.py all
+
+      - name: Run negative test suite
+        run: python3 tools/test_validator.py
+
+      - name: SQL syntax (psql parse only)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-common postgresql-client
+          # Dry-parse: start Postgres in docker and attempt schema + seed
+          docker run -d --name pg -e POSTGRES_PASSWORD=pg -p 5432:5432 postgres:15
+          for i in $(seq 1 30); do
+            PGPASSWORD=pg pg_isready -h 127.0.0.1 -U postgres && break || sleep 1
+          done
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -f metadata/schema.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -f metadata/seeds/barragem_x.sql
+          docker rm -f pg

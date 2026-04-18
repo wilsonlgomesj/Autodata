@@ -1,0 +1,24 @@
+{
+  "schema": "geo.telemetry.v1",
+  "msg_id": "5FC715D0HPN6Y2T78XNZ591S1E",
+  "site": "mineradora-x-barragem-norte",
+  "gateway": "gw-bx-001",
+  "device": "rtu-bx-c1",
+  "sensor": "pz-sec02-fund-01",
+  "sensor_type": "piezometer_vw",
+  "t_sample": "2026-04-18T13:45:18.123Z",
+  "t_ingest": null,
+  "seq": 145784,
+  "values": {
+    "pressure_kpa": 418.2,
+    "frequency_hz": 2710.15,
+    "temp_c": 25.9
+  },
+  "quality": {
+    "code": "SUSPECT",
+    "flags": ["STEP", "CROSS_SENSOR"]
+  },
+  "rssi_dbm": -80,
+  "firmware": "rtu-fw-2.4.1",
+  "sig": "ed25519:QyUJ+YkIdmY9NVJH4WwBviZGbFNEJQ+8kNAU5fkFD8IxWd3+N0hqccXTB36qKMwn9AY/reDldDscyA0zEhVkfw=="
+}
