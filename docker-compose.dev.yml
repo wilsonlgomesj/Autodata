@@ -23,8 +23,9 @@ services:
       - ./metadata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./metadata/migrations/002_measurement_hypertable.sql:/docker-entrypoint-initdb.d/02-measurement.sql:ro
       - ./metadata/migrations/003_notifications.sql:/docker-entrypoint-initdb.d/03-notifications.sql:ro
-      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/04-seed.sql:ro
-      - ./metadata/seeds/barragem_x_notification_routes.sql:/docker-entrypoint-initdb.d/05-routes.sql:ro
+      - ./metadata/migrations/004_anomaly.sql:/docker-entrypoint-initdb.d/04-anomaly.sql:ro
+      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/05-seed.sql:ro
+      - ./metadata/seeds/barragem_x_notification_routes.sql:/docker-entrypoint-initdb.d/06-routes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U autodata -d autodata"]
       interval: 5s
@@ -161,6 +162,22 @@ services:
       mqtt:
         condition: service_started
       mailhog:
+        condition: service_started
+
+  anomaly:
+    build:
+      context: .
+      dockerfile: anomaly/Dockerfile
+    environment:
+      PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
+      SITE_ID: mineradora-x-barragem-norte
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      WINDOW_SIZE: "24"
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
         condition: service_started
 
   grafana:

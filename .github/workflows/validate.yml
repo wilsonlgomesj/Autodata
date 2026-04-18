@@ -26,6 +26,7 @@ jobs:
           pip install -r api/requirements.txt
           pip install -r rtu/requirements.txt
           pip install -r notifications/requirements.txt
+          pip install -r anomaly/requirements.txt
           pip install pytest
 
       - name: Run full validation (schemas + plans + crosscheck)
@@ -48,6 +49,9 @@ jobs:
 
       - name: Run notifications service unit tests
         run: python3 -m pytest notifications/tests/ -v
+
+      - name: Run anomaly service unit tests
+        run: python3 -m pytest anomaly/tests/ -v
 
       - name: Validate Grafana dashboards JSON
         run: |
@@ -77,6 +81,8 @@ jobs:
             -f metadata/migrations/002_measurement_hypertable.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/migrations/003_notifications.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/migrations/004_anomaly.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/seeds/barragem_x.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
