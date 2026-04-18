@@ -22,7 +22,9 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./metadata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./metadata/migrations/002_measurement_hypertable.sql:/docker-entrypoint-initdb.d/02-measurement.sql:ro
-      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+      - ./metadata/migrations/003_notifications.sql:/docker-entrypoint-initdb.d/03-notifications.sql:ro
+      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/04-seed.sql:ro
+      - ./metadata/seeds/barragem_x_notification_routes.sql:/docker-entrypoint-initdb.d/05-routes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U autodata -d autodata"]
       interval: 5s
@@ -103,9 +105,40 @@ services:
     environment:
       PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
       AUTH_DISABLED: "true"  # dev only — enables GraphiQL and skips auth
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
     depends_on:
       db:
         condition: service_healthy
+
+  # Fake SMTP server that catches outbound mail and exposes a web UI on 8025.
+  # Used by the notification service in dev.
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # UI
+
+  notifications:
+    build:
+      context: .
+      dockerfile: notifications/Dockerfile
+    environment:
+      PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      MQTT_SUBSCRIBE_PATTERNS: "alert/+/+/+"
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_TLS: "false"
+      SMTP_FROM: alerts@autodata.local
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+      mailhog:
+        condition: service_started
 
 volumes:
   db-data:

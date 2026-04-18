@@ -25,6 +25,7 @@ jobs:
           pip install -r alerts/requirements.txt
           pip install -r api/requirements.txt
           pip install -r rtu/requirements.txt
+          pip install -r notifications/requirements.txt
           pip install pytest
 
       - name: Run full validation (schemas + plans + crosscheck)
@@ -45,6 +46,9 @@ jobs:
       - name: Run RTU firmware unit tests
         run: python3 -m pytest rtu/tests/ -v
 
+      - name: Run notifications service unit tests
+        run: python3 -m pytest notifications/tests/ -v
+
       - name: SQL apply (schema + hypertable migration + seed) on TimescaleDB
         run: |
           docker run -d --name tsdb \
@@ -63,7 +67,11 @@ jobs:
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/migrations/002_measurement_hypertable.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/migrations/003_notifications.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/seeds/barragem_x.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/seeds/barragem_x_notification_routes.sql
           # Smoke insert to exercise the hypertable via an unique msg_id
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 <<'SQL'
           INSERT INTO geo.measurement

@@ -1,9 +1,9 @@
-.PHONY: test test-schemas test-ingestion test-alerts test-api test-rtu validate fmt
+.PHONY: test test-schemas test-ingestion test-alerts test-api test-rtu test-notifications validate fmt
 
 # Runs all test suites. Because component package names (ingestion, alerts,
-# api, rtu) collide with top-level directories, each suite is invoked
-# separately with its own conftest injecting sys.path.
-test: validate test-ingestion test-alerts test-api test-rtu
+# api, rtu, notifications) collide with top-level directories, each suite
+# is invoked separately with its own conftest injecting sys.path.
+test: validate test-ingestion test-alerts test-api test-rtu test-notifications
 
 validate:
 	python3 tools/validate.py all
@@ -22,6 +22,9 @@ test-api:
 
 test-rtu:
 	python3 -m pytest rtu/tests/ -v
+
+test-notifications:
+	python3 -m pytest notifications/tests/ -v
 
 up-dev:
 	docker compose -f docker-compose.dev.yml up --build
