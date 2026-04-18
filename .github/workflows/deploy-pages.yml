@@ -60,6 +60,10 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-enable Pages on first run so we do not need to set up the
+          # Pages site manually via the API before the first deploy.
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
