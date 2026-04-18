@@ -214,23 +214,56 @@ com reconhecimento MFA-gated, editor de thresholds time-versioned, emissão
 de comandos MQTT, log de notificações. Stack: Tailwind + Apollo +
 react-leaflet + Recharts.
 
-## Stack de desenvolvimento completo
+## Demo de cliente — um comando
+
+```bash
+make demo
+```
+
+Sobe o stack completo em background, aguarda cada serviço reportar healthy
+e imprime as URLs prontas para abrir no navegador:
+
+```
+Frontend   http://localhost:8082
+GraphiQL   http://localhost:8080/graphql
+Grafana    http://localhost:3000     (admin/admin)
+Keycloak   http://localhost:8081     (admin/admin)
+MailHog    http://localhost:8025
+```
+
+Demora ~5-10 min na primeira execução (build dos containers). Depois:
+
+```bash
+make demo-open             # abre o frontend no navegador padrão
+make demo-trigger-alert    # dispara EMERGENCIA_N2 em segundos (demo momento)
+make demo-status           # estado dos containers
+make demo-logs             # tail dos logs
+make demo-down             # para tudo e remove volumes
+make demo-reset            # down + demo
+```
+
+`make demo-trigger-alert` publica dois piezômetros simultaneamente acima de
+500 kPa — aciona a regra `pz-emergencia-confirmado` (persistence=PT0S,
+confirm_count=2) imediatamente. Você verá dentro de segundos:
+
+1. Alerta **EMERGENCIA_N2** vermelho na aba Alertas
+2. Email capturado em MailHog
+3. Anotação no dashboard Grafana
+4. Registro em Notificações com latência de cada canal
+
+Outros cenários:
+
+```bash
+make demo-trigger-alert-scenario SCENARIO=alert      # fires após PT30M
+make demo-trigger-alert-scenario SCENARIO=attention  # PT1H
+make demo-trigger-alert-scenario SCENARIO=normal     # baseline sem alertar
+```
+
+## Stack manual (sem Makefile)
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
-# Portas expostas:
-#   Frontend: http://localhost:8082          (demo SPA)
-#   Grafana:  http://localhost:3000          (admin/admin ou anonymous Viewer)
-#   GraphiQL: http://localhost:8080/graphql
-#   Keycloak: http://localhost:8081          (admin/admin)
-#   MailHog:  http://localhost:8025          (captura emails do notifications)
-#   Postgres: localhost:5432                 (autodata/devpassword)
-#   MQTT:     localhost:1883
 ```
-
-Uma vez rodando, o RTU simulado alimenta telemetria a cada 5s, ingestion
-persiste, alerts avalia regras, notifications dispara emails/webhooks/SMS
-stubs, API serve GraphQL, Grafana visualiza.
 
 ## Próximos passos
 
