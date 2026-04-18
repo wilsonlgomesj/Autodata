@@ -76,6 +76,20 @@ class TimeseriesPoint:
 
 
 @dataclass
+class NotificationDispatch:
+    dispatch_id: int
+    alert_msg_id: str
+    site_id: str
+    level: str
+    channel: str
+    target: str
+    status: str
+    error: str | None
+    t_attempted: datetime
+    latency_ms: int | None
+
+
+@dataclass
 class AlertSummary:
     event_id: str
     site_id: str
@@ -202,6 +216,17 @@ SELECT jsonb_build_object(
 """
 
 
+NOTIFICATIONS_SQL = """
+SELECT dispatch_id, alert_msg_id, site_id, level::text, channel::text,
+       target, status::text, error, t_attempted, latency_ms
+FROM geo.notification_dispatch
+WHERE site_id = %s
+  AND (%s::TIMESTAMPTZ IS NULL OR t_attempted >= %s)
+ORDER BY t_attempted DESC
+LIMIT %s
+"""
+
+
 ALERTS_SQL = """
 SELECT event_id, site_id, structure_id, rule_id, rule_version,
        level::text, t_triggered, t_resolved, sensors
@@ -283,6 +308,14 @@ class Repository:
             (site_id, level, level, since, since, limit),
         )
         return [AlertSummary(*r) for r in rows]
+
+    def list_notifications(
+        self, site_id: str, since: datetime | None = None, limit: int = 100,
+    ) -> list[NotificationDispatch]:
+        rows = self.db.fetch_all(
+            NOTIFICATIONS_SQL, (site_id, since, since, limit),
+        )
+        return [NotificationDispatch(*r) for r in rows]
 
     # --- GeoJSON ---------------------------------------------------------
 

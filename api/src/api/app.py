@@ -15,6 +15,7 @@ import os
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 
 from .auth import (
@@ -90,6 +91,23 @@ def create_app() -> FastAPI:
     )
 
     app = FastAPI(title="Autodata API", version="0.1.0")
+
+    # CORS for the SPA. Allowed origins come from CORS_ORIGINS
+    # (comma-separated) or default to the dev frontend on :5173 / :8082.
+    origins = [
+        o.strip() for o in os.environ.get(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://localhost:8082,http://127.0.0.1:5173",
+        ).split(",") if o.strip()
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Dev-User",
+                        "X-Dev-Roles", "X-Dev-Mfa", "X-User"],
+    )
 
     @app.get("/health")
     def health() -> dict:

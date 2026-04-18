@@ -134,9 +134,21 @@ services:
       KEYCLOAK_AUDIENCE: "autodata-api"
       MQTT_HOST: mqtt
       MQTT_PORT: 1883
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:8082,http://127.0.0.1:5173"
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_ORIGIN: "http://localhost:8080"
+    ports:
+      - "8082:80"
+    depends_on:
+      - api
 
   # Fake SMTP server that catches outbound mail and exposes a web UI on 8025.
   # Used by the notification service in dev.

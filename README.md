@@ -206,13 +206,23 @@ Painéis:
 7. Saúde — mensagens/15min, dead-letter/24h, sensores ativos
 8. Annotations overlay de cada alerta disparado
 
+## Frontend (`frontend/`)
+
+SPA em React + Vite + TypeScript demonstrando todas as funcionalidades.
+Páginas: visão geral com mapa + KPIs, sensores com timeseries, alertas
+com reconhecimento MFA-gated, editor de thresholds time-versioned, emissão
+de comandos MQTT, log de notificações. Stack: Tailwind + Apollo +
+react-leaflet + Recharts.
+
 ## Stack de desenvolvimento completo
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 # Portas expostas:
+#   Frontend: http://localhost:8082          (demo SPA)
 #   Grafana:  http://localhost:3000          (admin/admin ou anonymous Viewer)
 #   GraphiQL: http://localhost:8080/graphql
+#   Keycloak: http://localhost:8081          (admin/admin)
 #   MailHog:  http://localhost:8025          (captura emails do notifications)
 #   Postgres: localhost:5432                 (autodata/devpassword)
 #   MQTT:     localhost:1883

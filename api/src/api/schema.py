@@ -78,6 +78,20 @@ class TimeseriesPoint:
 
 
 @strawberry.type
+class NotificationDispatch:
+    dispatch_id: int
+    alert_msg_id: str
+    site_id: str
+    level: str
+    channel: str
+    target: str
+    status: str
+    error: Optional[str]
+    t_attempted: datetime
+    latency_ms: Optional[int]
+
+
+@strawberry.type
 class AlertSummary:
     event_id: str
     site_id: str
@@ -171,6 +185,19 @@ class Query:
     def site_boundary(self, info: Info, site_id: str) -> Optional[JSON]:
         """Returns {boundary, point} as GeoJSON geometries, or null."""
         return _repo(info).site_boundary(site_id)
+
+    @strawberry.field
+    def notifications(
+        self,
+        info: Info,
+        site_id: str,
+        since: Optional[datetime] = None,
+        limit: int = 100,
+    ) -> list[NotificationDispatch]:
+        return [
+            NotificationDispatch(**n.__dict__)
+            for n in _repo(info).list_notifications(site_id, since, limit)
+        ]
 
     @strawberry.field
     def alerts(

@@ -4,3 +4,9 @@ __pycache__/
 .venv/
 .env
 .DS_Store
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+.vite/
