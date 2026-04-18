@@ -141,6 +141,43 @@ def _publisher(info: Info) -> Optional[MqttPublisher]:
     return info.context.get("publisher")
 
 
+def _auth(info: Info):
+    """Return the AuthContext from context or None."""
+    return info.context.get("auth")
+
+
+class AuthorizationError(Exception):
+    """Raised by mutation resolvers when an authz precondition fails.
+
+    Strawberry surfaces this as a GraphQL error; no DB or MQTT side effects
+    occur because the raise happens before any write.
+    """
+
+
+def _require_mfa(info: Info, mutation_name: str) -> None:
+    ctx = _auth(info)
+    if ctx is None or not getattr(ctx, "mfa", False):
+        raise AuthorizationError(
+            f"MFA required for {mutation_name}"
+        )
+
+
+def _require_role(info: Info, role: str, mutation_name: str) -> None:
+    ctx = _auth(info)
+    if ctx is None or not ctx.has_role(role):
+        raise AuthorizationError(
+            f"role {role!r} required for {mutation_name}"
+        )
+
+
+def _require_site_scope(info: Info, site_id: str, mutation_name: str) -> None:
+    ctx = _auth(info)
+    if ctx is None or not ctx.can_operate_site(site_id):
+        raise AuthorizationError(
+            f"site {site_id!r} not in user's scope for {mutation_name}"
+        )
+
+
 def _audit(
     write: WriteClient,
     actor: str,
@@ -179,6 +216,10 @@ class Mutation:
         write = _write(info)
         correlation = new_ulid()
 
+        # MFA-gated. In dev (AUTH_DISABLED=true) the dev context carries
+        # mfa=true by default. In prod, the token must assert MFA.
+        _require_mfa(info, "acknowledge_alert")
+
         row = write.fetch_one(ACK_ALERT_SQL, (user, comment, event_id))
         if row is None:
             return MutationResult(
@@ -208,6 +249,12 @@ class Mutation:
         user = _user(info)
         write = _write(info)
         correlation = new_ulid()
+
+        # updateThreshold is the most sensitive mutation: it can mask real
+        # safety incidents. Enforce MFA and engineer role + site scope.
+        _require_mfa(info, "update_threshold")
+        _require_role(info, "engineer", "update_threshold")
+        _require_site_scope(info, input.site_id, "update_threshold")
 
         # Monotonic-level sanity check for direction=above
         if input.direction == "above":
@@ -277,6 +324,11 @@ class Mutation:
         write = _write(info)
         publisher = _publisher(info)
         correlation = new_ulid()
+
+        # Commands reach physical hardware — require MFA + operator role.
+        _require_mfa(info, "issue_command")
+        _require_role(info, "operator", "issue_command")
+        _require_site_scope(info, input.site_id, "issue_command")
 
         try:
             params = json.loads(input.params_json) if input.params_json else {}
