@@ -71,9 +71,54 @@ python3 tools/test_validator.py
    - CI verde (`python3 tools/validate.py all` + `test_validator.py`).
    - Entrada em `CHANGELOG.md`.
 
+## Serviço de ingestão
+
+Pipeline MQTT → validação → Postgres/TimescaleDB com idempotência por `msg_id`.
+
+```
+ingestion/
+├── src/ingestion/    config, db, validator, persister, handler, mqtt_client, main
+├── tests/            13 unit tests (fake executor, sem infra real)
+├── requirements.txt
+└── Dockerfile
+```
+
+Regras de segurança implementadas:
+
+- Validação contra JSON Schema antes de persistir.
+- `topic vs. payload mismatch` detection: device não pode publicar sobre o
+  escopo de outro site (defesa em profundidade além da ACL do broker).
+- Idempotência: `ON CONFLICT (site, sensor, metric, msg_id) DO NOTHING`.
+- Dead-letter queue em `geo.dead_letter` para toda falha (parse, schema,
+  mismatch, DB error).
+
+### Rodar localmente (dev)
+
+```bash
+# Stack completa: TimescaleDB + Mosquitto + serviço de ingestão
+docker compose -f docker-compose.dev.yml up --build
+
+# Publicar uma mensagem de teste (precisa de mosquitto-clients instalado)
+mosquitto_pub -h localhost -t \
+  'tel/mineradora-x-barragem-norte/gw-bx-001/rtu-bx-c1/pz-sec02-fund-01/meas' \
+  -f examples/payloads/piezometer_vw_good.json
+
+# Verificar persistência
+psql postgresql://autodata:devpassword@localhost:5432/autodata \
+  -c 'SELECT * FROM geo.measurement ORDER BY t_sample DESC LIMIT 10;'
+```
+
+### Testes
+
+```bash
+pip install -r ingestion/requirements.txt pytest
+python3 -m pytest ingestion/tests/ -v
+```
+
 ## Próximos passos
 
-- Migração TimescaleDB para hypertable `measurement`.
 - Motor de regras (OPA Rego) consumindo `threshold` e emitindo `geo.alert.v1`.
 - Firmware de RTU de referência (store-and-forward, assinatura Ed25519).
-- Ingestão (MQTT → Kafka → TimescaleDB) com idempotência por `msg_id`.
+- Verificação Ed25519 da assinatura `sig` no ingestion (hoje só checada por regex).
+- Serviço de API (GraphQL + REST) sobre TimescaleDB.
+- Dashboard Grafana com datasource TimescaleDB.

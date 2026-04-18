@@ -1,0 +1,62 @@
+# Development-only stack. Brings up TimescaleDB, Mosquitto, and the ingestion
+# service against a pre-seeded Barragem X site.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# First boot: the db service applies metadata/schema.sql + hypertable
+# migration + seed via an init script mounted into /docker-entrypoint-initdb.d.
+#
+# NOT FOR PRODUCTION. Credentials are trivial; MQTT is anonymous; TLS is off.
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_USER: autodata
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: autodata
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./metadata/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./metadata/migrations/002_measurement_hypertable.sql:/docker-entrypoint-initdb.d/02-measurement.sql:ro
+      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autodata -d autodata"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/mosquitto.dev.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/broker/uptime", "-C", "1", "-W", "2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: ingestion/Dockerfile
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      MQTT_CLIENT_ID: svc-ingestion-dev
+      MQTT_SUBSCRIBE_PATTERNS: "tel/+/+/+/+/meas,tel/+/+/+/+/burst"
+      PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
+      DEAD_LETTER_ENABLED: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+
+volumes:
+  db-data:

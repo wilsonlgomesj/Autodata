@@ -19,7 +19,10 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r tools/requirements.txt
+        run: |
+          pip install -r tools/requirements.txt
+          pip install -r ingestion/requirements.txt
+          pip install pytest
 
       - name: Run full validation (schemas + plans + crosscheck)
         run: python3 tools/validate.py all
@@ -27,15 +30,36 @@ jobs:
       - name: Run negative test suite
         run: python3 tools/test_validator.py
 
-      - name: SQL syntax (psql parse only)
+      - name: Run ingestion unit tests
+        run: python3 -m pytest ingestion/tests/ -v
+
+      - name: SQL apply (schema + hypertable migration + seed) on TimescaleDB
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client-common postgresql-client
-          # Dry-parse: start Postgres in docker and attempt schema + seed
-          docker run -d --name pg -e POSTGRES_PASSWORD=pg -p 5432:5432 postgres:15
+          docker run -d --name tsdb \
+            -e POSTGRES_PASSWORD=pg \
+            -p 5432:5432 \
+            timescale/timescaledb:latest-pg15
           for i in $(seq 1 30); do
             PGPASSWORD=pg pg_isready -h 127.0.0.1 -U postgres && break || sleep 1
           done
-          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -f metadata/schema.sql
-          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -f metadata/seeds/barragem_x.sql
-          docker rm -f pg
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/schema.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/migrations/002_measurement_hypertable.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/seeds/barragem_x.sql
+          # Smoke insert to exercise the hypertable via an unique msg_id
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO geo.measurement
+            (t_sample, site_id, sensor_id, metric, value, quality, flags, msg_id, seq)
+          VALUES
+            (NOW(), 'mineradora-x-barragem-norte', 'pz-sec02-fund-01',
+             'pressure_kpa', 312.4, 'GOOD', ARRAY[]::TEXT[],
+             '01HK4X9Q8RX200000000000099', 1);
+          SELECT count(*) FROM geo.measurement;
+          SQL
+          docker rm -f tsdb
