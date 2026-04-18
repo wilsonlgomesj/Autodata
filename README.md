@@ -171,20 +171,62 @@ pip install -r api/requirements.txt pytest
 python3 -m pytest api/tests/ -v
 ```
 
+## RTU reference firmware (`rtu/`)
+
+Simulador Python com Ed25519 real (assinatura sobre JSON canônico excluindo
+`sig` e `t_ingest`). Store-and-forward em SQLite. Publica em MQTT com QoS 1
+e só marca como enviado após PUBACK.
+
+Chave privada: arquivo PEM via `PRIVATE_KEY_PEM` — se ausente, gera
+efêmera e imprime a pública para provisionamento em `geo.device`.
+
+## Notifications dispatcher (`notifications/`)
+
+Consome `alert/+/+/+`. Roteamento por `min_level` + escopo de site + glob
+de `rule_id` + filtro de estrutura. Canais: email (SMTP), webhook,
+SMS (stub Twilio-like), voz (stub). `geo.notification_dispatch` é
+append-only com UNIQUE `(alert_msg_id, route_id, channel)` — idempotente.
+
+## Dashboard Grafana (`grafana/`)
+
+Provisioning automático na inicialização:
+
+- Datasource `TimescaleDB` apontando para o Postgres/TSDB.
+- Dashboard `Autodata — Barragem (por site)` com variável dinâmica `$site`
+  populada de `geo.site`.
+
+Painéis:
+
+1. Poropressão multi-PZ com thresholds (atencao → emergencia_n2) como bandas
+2. Último valor por PZ fundação (stat colorido)
+3. Chuva 24h acumulada (bars)
+4. Inclinômetros crista (tilt X/Y)
+5. Tabela de alertas ativos com cor por nível
+6. Tabela de notificações da última hora (latência, erros)
+7. Saúde — mensagens/15min, dead-letter/24h, sensores ativos
+8. Annotations overlay de cada alerta disparado
+
 ## Stack de desenvolvimento completo
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
-# db + mqtt + ingestion + alerts + api com Barragem X pré-semeada
-# GraphiQL:   http://localhost:8080/graphql
-# Postgres:   localhost:5432 (user autodata / devpassword)
-# MQTT:       localhost:1883
+# Portas expostas:
+#   Grafana:  http://localhost:3000          (admin/admin ou anonymous Viewer)
+#   GraphiQL: http://localhost:8080/graphql
+#   MailHog:  http://localhost:8025          (captura emails do notifications)
+#   Postgres: localhost:5432                 (autodata/devpassword)
+#   MQTT:     localhost:1883
 ```
+
+Uma vez rodando, o RTU simulado alimenta telemetria a cada 5s, ingestion
+persiste, alerts avalia regras, notifications dispara emails/webhooks/SMS
+stubs, API serve GraphQL, Grafana visualiza.
 
 ## Próximos passos
 
-- Firmware de RTU de referência (store-and-forward, assinatura Ed25519).
-- Verificação Ed25519 da assinatura `sig` no ingestion (hoje só checada por regex).
-- Mutations GraphQL: reconhecer alerta, mudar threshold, emitir comando.
-- Dashboard Grafana com datasource TimescaleDB e template dinâmico por site.
-- Motor de notificações (SMS/voz/webhook) consumindo `alert/#`.
+- Firmware de RTU para microcontrolador real (ESP32/STM32) em C++.
+- Auth real via Keycloak com RBAC por site, MFA obrigatório em
+  `acknowledgeAlert` e `updateThreshold`.
+- Integração SCADA via OPC UA.
+- ML para detecção de anomalias multivariada (autoencoder LSTM).
+- GIS com PostGIS + QGIS Server.

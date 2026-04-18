@@ -1,0 +1,15 @@
+# Dashboard file provider — loads every JSON file under /etc/grafana/dashboards.
+
+apiVersion: 1
+
+providers:
+  - name: Autodata
+    orgId: 1
+    folder: Autodata
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

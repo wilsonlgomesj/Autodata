@@ -1,0 +1,24 @@
+# Grafana datasource provisioning — applied on boot.
+# Docs: https://grafana.com/docs/grafana/latest/administration/provisioning/#datasources
+
+apiVersion: 1
+
+datasources:
+  - name: TimescaleDB
+    type: postgres
+    access: proxy
+    uid: autodata-tsdb
+    url: db:5432
+    user: autodata
+    database: autodata
+    secureJsonData:
+      password: devpassword
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: true
+      maxOpenConns: 20
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+    isDefault: true
+    editable: false

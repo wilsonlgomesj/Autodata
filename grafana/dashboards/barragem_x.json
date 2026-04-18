@@ -1,0 +1,250 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "name": "Alerts",
+        "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+        "enable": true,
+        "iconColor": "red",
+        "rawQuery": "SELECT t_triggered AS time, level || ' - ' || rule_id AS text, array_to_string(sensors, ', ') AS tags FROM geo.alert_event WHERE site_id = '$site' AND $__timeFilter(t_triggered) ORDER BY t_triggered",
+        "target": {"refId": "Anno"}
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Poropressão — piezômetros de fundação",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 10, "w": 18, "x": 0, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT time_bucket('$__interval', t_sample) AS time, sensor_id AS metric, avg(value) AS value FROM geo.measurement WHERE site_id = '$site' AND sensor_id LIKE 'pz-%-fund-%' AND metric = 'pressure_kpa' AND $__timeFilter(t_sample) GROUP BY time, sensor_id ORDER BY time",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kPa",
+          "custom": {"drawStyle": "line", "lineWidth": 1, "fillOpacity": 10},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "blue", "value": 380},
+              {"color": "yellow", "value": 420},
+              {"color": "orange", "value": 460},
+              {"color": "red", "value": 500}
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Último valor / PZ fundação",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 10, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT DISTINCT ON (sensor_id) sensor_id AS metric, value FROM geo.measurement WHERE site_id = '$site' AND sensor_id LIKE 'pz-%-fund-%' AND metric = 'pressure_kpa' ORDER BY sensor_id, t_sample DESC",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kPa",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 380},
+              {"color": "orange", "value": 420},
+              {"color": "red", "value": 460}
+            ]
+          }
+        }
+      },
+      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Chuva 24h acumulada",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT time_bucket('1 hour', t_sample) AS time, sensor_id AS metric, sum(value) AS value FROM geo.measurement WHERE site_id = '$site' AND metric = 'rainfall_mm' AND $__timeFilter(t_sample) GROUP BY time, sensor_id ORDER BY time",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "custom": {"drawStyle": "bars", "fillOpacity": 50}
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Inclinômetros — crista",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT time_bucket('$__interval', t_sample) AS time, sensor_id || ' / ' || metric AS metric, avg(value) AS value FROM geo.measurement WHERE site_id = '$site' AND sensor_id LIKE 'ipi-crista-%' AND metric IN ('tilt_x_deg', 'tilt_y_deg') AND $__timeFilter(t_sample) GROUP BY time, sensor_id, metric ORDER BY time",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "degree"}}
+    },
+    {
+      "type": "table",
+      "title": "Alertas ativos",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT t_triggered AS \"Disparado\", level AS \"Nível\", rule_id AS \"Regra\", array_to_string(sensors, ', ') AS \"Sensores\", CASE WHEN ack_at IS NULL THEN 'aberto' ELSE 'reconhecido' END AS \"Status\" FROM geo.alert_event WHERE site_id = '$site' AND t_resolved IS NULL ORDER BY t_triggered DESC LIMIT 50",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Nível"},
+            "properties": [
+              {"id": "custom.cellOptions", "value": {"type": "color-background"}},
+              {
+                "id": "mappings",
+                "value": [
+                  {"type": "value", "options": {"ATENCAO":       {"color": "blue"}}},
+                  {"type": "value", "options": {"ALERTA":        {"color": "yellow"}}},
+                  {"type": "value", "options": {"EMERGENCIA_N1": {"color": "orange"}}},
+                  {"type": "value", "options": {"EMERGENCIA_N2": {"color": "red"}}}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Notificações enviadas (última hora)",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT t_attempted AS \"Hora\", channel AS \"Canal\", target AS \"Destino\", status AS \"Status\", latency_ms AS \"Latência (ms)\", error AS \"Erro\" FROM geo.notification_dispatch WHERE site_id = '$site' AND t_attempted > now() - interval '1 hour' ORDER BY t_attempted DESC LIMIT 100",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Saúde — mensagens nos últimos 15 min",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 26},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT count(*) AS value FROM geo.measurement WHERE site_id = '$site' AND t_sample > now() - interval '15 minutes'",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 1},
+              {"color": "green", "value": 10}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Dead letter (últimas 24h)",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 26},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT count(*) AS value FROM geo.dead_letter WHERE t_received > now() - interval '24 hours'",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 10}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Sensores ativos",
+      "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 26},
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT count(*) AS value FROM geo.sensor WHERE site_id = '$site' AND active = TRUE",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["autodata", "geotecnia", "barragem"],
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "type": "query",
+        "label": "Site",
+        "datasource": {"type": "postgres", "uid": "autodata-tsdb"},
+        "query": "SELECT site_id AS __value, display_name AS __text FROM geo.site WHERE active = TRUE ORDER BY display_name",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "time": {"from": "now-24h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Autodata — Barragem (por site)",
+  "uid": "autodata-barragem",
+  "version": 1,
+  "weekStart": ""
+}
