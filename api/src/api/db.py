@@ -1,4 +1,10 @@
-"""psycopg-backed DatabaseClient for the read API."""
+"""psycopg-backed DatabaseClient for the read API.
+
+Exposes both read (fetch_all/fetch_one) and write (execute) methods so the
+same pool serves Query and Mutation resolvers. Mutation calls belonging to
+a single request are wrapped in a transaction via the pool's autocommit
+default disabled — each `with pool.connection()` block is its own tx.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +26,8 @@ class PgClient:
     def close(self) -> None:
         self.pool.close()
 
+    # --- Reads ---
+
     def fetch_all(self, sql: str, params: tuple[Any, ...]) -> list[tuple[Any, ...]]:
         with self.pool.connection() as conn:
             with conn.cursor() as cur:
@@ -31,3 +39,11 @@ class PgClient:
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 return cur.fetchone()
+
+    # --- Writes ---
+
+    def execute(self, sql: str, params: tuple[Any, ...]) -> int:
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, params)
+                return cur.rowcount or 0

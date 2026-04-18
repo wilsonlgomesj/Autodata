@@ -12,6 +12,7 @@ from typing import Optional
 import strawberry
 from strawberry.types import Info
 
+from .mutations import Mutation
 from .repository import Repository
 
 
@@ -171,4 +172,4 @@ class Query:
         return out
 
 
-schema = strawberry.Schema(query=Query)
+schema = strawberry.Schema(query=Query, mutation=Mutation)
