@@ -24,6 +24,7 @@ jobs:
           pip install -r ingestion/requirements.txt
           pip install -r alerts/requirements.txt
           pip install -r api/requirements.txt
+          pip install -r rtu/requirements.txt
           pip install pytest
 
       - name: Run full validation (schemas + plans + crosscheck)
@@ -40,6 +41,9 @@ jobs:
 
       - name: Run read API unit tests
         run: python3 -m pytest api/tests/ -v
+
+      - name: Run RTU firmware unit tests
+        run: python3 -m pytest rtu/tests/ -v
 
       - name: SQL apply (schema + hypertable migration + seed) on TimescaleDB
         run: |

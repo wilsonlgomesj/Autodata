@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import paho.mqtt.client as mqtt
 
 from .config import Config
-from .handler import handle_message
+from .handler import Verifier, handle_message
 from .persister import Executor
 
 
@@ -50,7 +50,7 @@ def build_client(cfg: Config) -> mqtt.Client:
     return client
 
 
-def run(cfg: Config, executor: Executor) -> None:
+def run(cfg: Config, executor: Executor, verifier: Verifier | None = None) -> None:
     client = build_client(cfg)
     runtime = Runtime(cfg, executor, client)
 
@@ -70,6 +70,7 @@ def run(cfg: Config, executor: Executor) -> None:
                 topic=msg.topic,
                 raw_payload=msg.payload,
                 dead_letter_enabled=cfg.dead_letter_enabled,
+                verifier=verifier,
             )
             if not result.ok:
                 log.warning(

@@ -52,9 +52,28 @@ services:
       MQTT_SUBSCRIBE_PATTERNS: "tel/+/+/+/+/meas,tel/+/+/+/+/burst"
       PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
       DEAD_LETTER_ENABLED: "true"
+      # Set REQUIRE_SIGNATURE=true once geo.device has a real public_key for
+      # the RTU below. Dev default is false to allow bootstrap.
+      REQUIRE_SIGNATURE: "false"
     depends_on:
       db:
         condition: service_healthy
+      mqtt:
+        condition: service_started
+
+  rtu:
+    build:
+      context: .
+      dockerfile: rtu/Dockerfile
+    environment:
+      SITE: mineradora-x-barragem-norte
+      GATEWAY: gw-bx-001
+      DEVICE: rtu-bx-c1
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      INTERVAL_S: "5"
+      BUFFER_PATH: /tmp/rtu_buffer.sqlite
+    depends_on:
       mqtt:
         condition: service_started
 
