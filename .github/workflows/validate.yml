@@ -64,10 +64,12 @@ jobs:
 
       - name: SQL apply (schema + hypertable migration + seed) on TimescaleDB
         run: |
+          # timescaledb-ha ships with PostGIS; vanilla timescaledb does not,
+          # which breaks migration 005.
           docker run -d --name tsdb \
             -e POSTGRES_PASSWORD=pg \
             -p 5432:5432 \
-            timescale/timescaledb:latest-pg15
+            timescale/timescaledb-ha:pg15
           for i in $(seq 1 30); do
             PGPASSWORD=pg pg_isready -h 127.0.0.1 -U postgres && break || sleep 1
           done
@@ -84,9 +86,13 @@ jobs:
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/migrations/004_anomaly.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/migrations/005_gis.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/seeds/barragem_x.sql
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
             -f metadata/seeds/barragem_x_notification_routes.sql
+          PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 \
+            -f metadata/seeds/barragem_x_gis.sql
           # Smoke insert to exercise the hypertable via an unique msg_id
           PGPASSWORD=pg psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 <<'SQL'
           INSERT INTO geo.measurement

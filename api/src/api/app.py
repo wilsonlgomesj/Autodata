@@ -95,6 +95,26 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
+    # --- GeoJSON REST -----------------------------------------------------
+    # GraphQL is great for the dashboard, but Leaflet/Mapbox/OpenLayers
+    # consume GeoJSON via plain HTTP. Mirror the spatial queries at simple
+    # REST paths for drop-in map layers.
+
+    @app.get("/gis/{site_id}/sensors.geojson")
+    def gis_sensors(site_id: str, _=Depends(auth_dep)) -> dict:
+        return repo.sensors_geojson(site_id)
+
+    @app.get("/gis/{site_id}/structures.geojson")
+    def gis_structures(site_id: str, _=Depends(auth_dep)) -> dict:
+        return repo.structures_geojson(site_id)
+
+    @app.get("/gis/{site_id}/site.geojson")
+    def gis_site(site_id: str, _=Depends(auth_dep)) -> dict:
+        data = repo.site_boundary(site_id)
+        if data is None:
+            raise HTTPException(status_code=404, detail="site has no geometry")
+        return data
+
     @app.get("/authz-ping")
     def authz_ping(ctx: AuthContext = Depends(auth_dep)) -> dict:
         """Sanity endpoint for debugging auth: echoes parsed claims."""

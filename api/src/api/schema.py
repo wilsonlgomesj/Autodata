@@ -9,7 +9,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+import json
+
 import strawberry
+from strawberry.scalars import JSON
 from strawberry.types import Info
 
 from .mutations import Mutation
@@ -153,6 +156,21 @@ class Query:
                 site_id, sensor_id, metric, t_from, t_to, resolution, limit
             )
         ]
+
+    @strawberry.field
+    def sensors_geojson(self, info: Info, site_id: str) -> JSON:
+        """Returns a GeoJSON FeatureCollection of sensors for the site."""
+        return _repo(info).sensors_geojson(site_id)
+
+    @strawberry.field
+    def structures_geojson(self, info: Info, site_id: str) -> JSON:
+        """Returns a GeoJSON FeatureCollection of structures (dam footprints)."""
+        return _repo(info).structures_geojson(site_id)
+
+    @strawberry.field
+    def site_boundary(self, info: Info, site_id: str) -> Optional[JSON]:
+        """Returns {boundary, point} as GeoJSON geometries, or null."""
+        return _repo(info).site_boundary(site_id)
 
     @strawberry.field
     def alerts(

@@ -11,7 +11,8 @@
 
 services:
   db:
-    image: timescale/timescaledb:latest-pg15
+    # timescaledb-ha includes PostGIS; vanilla timescaledb:latest-pg15 does not.
+    image: timescale/timescaledb-ha:pg15
     environment:
       POSTGRES_USER: autodata
       POSTGRES_PASSWORD: devpassword
@@ -24,8 +25,10 @@ services:
       - ./metadata/migrations/002_measurement_hypertable.sql:/docker-entrypoint-initdb.d/02-measurement.sql:ro
       - ./metadata/migrations/003_notifications.sql:/docker-entrypoint-initdb.d/03-notifications.sql:ro
       - ./metadata/migrations/004_anomaly.sql:/docker-entrypoint-initdb.d/04-anomaly.sql:ro
-      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/05-seed.sql:ro
-      - ./metadata/seeds/barragem_x_notification_routes.sql:/docker-entrypoint-initdb.d/06-routes.sql:ro
+      - ./metadata/migrations/005_gis.sql:/docker-entrypoint-initdb.d/05-gis.sql:ro
+      - ./metadata/seeds/barragem_x.sql:/docker-entrypoint-initdb.d/06-seed.sql:ro
+      - ./metadata/seeds/barragem_x_notification_routes.sql:/docker-entrypoint-initdb.d/07-routes.sql:ro
+      - ./metadata/seeds/barragem_x_gis.sql:/docker-entrypoint-initdb.d/08-gis-seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U autodata -d autodata"]
       interval: 5s

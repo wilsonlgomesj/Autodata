@@ -160,6 +160,48 @@ ORDER BY bucket_h
 LIMIT %s
 """
 
+SITE_GEOJSON_SQL = """
+SELECT jsonb_build_object(
+  'type', 'FeatureCollection',
+  'features', coalesce(
+    (SELECT jsonb_agg(feature) FROM geo.sensor_feature WHERE site_id = %s),
+    '[]'::jsonb
+  )
+)
+"""
+
+SITE_BOUNDARY_SQL = """
+SELECT
+  CASE WHEN geom_boundary IS NULL THEN NULL
+       ELSE ST_AsGeoJSON(geom_boundary)::jsonb END AS boundary,
+  CASE WHEN geom_point IS NULL THEN NULL
+       ELSE ST_AsGeoJSON(geom_point)::jsonb END AS point
+FROM geo.site WHERE site_id = %s
+"""
+
+STRUCTURE_GEOJSON_SQL = """
+SELECT jsonb_build_object(
+  'type', 'FeatureCollection',
+  'features', coalesce(jsonb_agg(jsonb_build_object(
+    'type', 'Feature',
+    'id', structure_id,
+    'geometry', CASE
+      WHEN geom_footprint IS NOT NULL THEN ST_AsGeoJSON(geom_footprint)::jsonb
+      WHEN geom_point IS NOT NULL     THEN ST_AsGeoJSON(geom_point)::jsonb
+    END,
+    'properties', jsonb_build_object(
+      'structure_id', structure_id,
+      'kind', kind::text,
+      'display_name', display_name,
+      'height_m', height_m,
+      'crest_length_m', crest_length_m,
+      'risk_class', risk_class
+    )
+  )), '[]'::jsonb)
+) FROM geo.structure WHERE site_id = %s
+"""
+
+
 ALERTS_SQL = """
 SELECT event_id, site_id, structure_id, rule_id, rule_version,
        level::text, t_triggered, t_resolved, sensors
@@ -241,3 +283,22 @@ class Repository:
             (site_id, level, level, since, since, limit),
         )
         return [AlertSummary(*r) for r in rows]
+
+    # --- GeoJSON ---------------------------------------------------------
+
+    def sensors_geojson(self, site_id: str) -> dict:
+        row = self.db.fetch_one(SITE_GEOJSON_SQL, (site_id,))
+        return row[0] if row else {"type": "FeatureCollection", "features": []}
+
+    def site_boundary(self, site_id: str) -> dict | None:
+        row = self.db.fetch_one(SITE_BOUNDARY_SQL, (site_id,))
+        if not row:
+            return None
+        boundary, point = row
+        if boundary is None and point is None:
+            return None
+        return {"boundary": boundary, "point": point}
+
+    def structures_geojson(self, site_id: str) -> dict:
+        row = self.db.fetch_one(STRUCTURE_GEOJSON_SQL, (site_id,))
+        return row[0] if row else {"type": "FeatureCollection", "features": []}
