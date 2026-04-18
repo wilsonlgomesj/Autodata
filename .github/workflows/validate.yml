@@ -53,6 +53,9 @@ jobs:
       - name: Run anomaly service unit tests
         run: python3 -m pytest anomaly/tests/ -v
 
+      - name: Run ESP32 firmware canonical-JSON golden test
+        run: python3 -m pytest rtu-esp32/test/test_canonical_golden.py -v
+
       - name: Validate Grafana dashboards JSON
         run: |
           for f in grafana/dashboards/*.json; do
