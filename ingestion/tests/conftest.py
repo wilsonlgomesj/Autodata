@@ -1,16 +1,27 @@
-"""Shared pytest fixtures and sys.path setup for the ingestion test suite."""
+"""Pytest conftest for ingestion tests.
+
+Inserts ingestion/src at sys.path[0] so that 'ingestion' resolves to the
+real package regardless of cwd or of pytest's namespace-package discovery.
+"""
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parent.parent
-INGESTION_SRC = REPO_ROOT / "ingestion" / "src"
-TOOLS_DIR = REPO_ROOT / "tools"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_PATHS = [REPO_ROOT / "ingestion" / "src", REPO_ROOT / "tools"]
 
-for path in (INGESTION_SRC, TOOLS_DIR):
-    s = str(path)
-    if s not in sys.path:
-        sys.path.insert(0, s)
+for p in reversed(SRC_PATHS):  # reversed so the first one ends up at [0]
+    s = str(p)
+    if s in sys.path:
+        sys.path.remove(s)
+    sys.path.insert(0, s)
+
+# If pytest's collection already imported 'ingestion' as a namespace package
+# pointing at the outer directory, drop it so the real src/ingestion package
+# resolves on next import.
+_ing = sys.modules.get("ingestion")
+if _ing is not None and not getattr(_ing, "__file__", None):
+    # namespace package (no __init__); evict it
+    del sys.modules["ingestion"]

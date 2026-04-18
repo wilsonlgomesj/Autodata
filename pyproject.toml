@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+# Each component's tests/ directory owns its conftest.py which injects the
+# component's src/ into sys.path with priority 0. Because component packages
+# (ingestion, alerts, api) share names with top-level directories, pytest
+# must be invoked against one testpath at a time:
+#
+#   python3 -m pytest ingestion/tests/
+#   python3 -m pytest alerts/tests/
+#   python3 -m pytest api/tests/
+#
+# For convenience, use the Makefile target `make test`.
+addopts = "--import-mode=importlib"

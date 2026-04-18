@@ -58,5 +58,35 @@ services:
       mqtt:
         condition: service_started
 
+  alerts:
+    build:
+      context: .
+      dockerfile: alerts/Dockerfile
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      MQTT_SUBSCRIBE_PATTERNS: "tel/+/+/+/+/meas"
+      PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
+      RULES_PATH: /app/rules
+      SITE_ID: mineradora-x-barragem-norte
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PG_DSN: postgresql://autodata:devpassword@db:5432/autodata
+      AUTH_DISABLED: "true"  # dev only — enables GraphiQL and skips auth
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db-data:

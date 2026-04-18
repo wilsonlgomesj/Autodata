@@ -1,0 +1,75 @@
+# Regras de alerta — Barragem X
+#
+# Versionadas em Git. Alterações passam por PR com duas aprovações
+# (engenharia + segurança de barragem), e resultam em nova entrada em
+# alert_rule com bump semver.
+
+rules:
+  - rule_id: pz-fund-atencao
+    version: v1.0.0
+    site: mineradora-x-barragem-norte
+    description: >
+      PZ fundação acima do limite de atenção, persistência 1h.
+    level: ATENCAO
+    match:
+      sensor: "pz-*-fund-*"
+      metric: pressure_kpa
+    when:
+      direction: above
+      ref: threshold.atencao
+      persistence: PT1H
+      hysteresis_pct: 5.0
+      require_quality: [GOOD, SUSPECT]
+    actions: [email]
+
+  - rule_id: pz-fund-alerta
+    version: v1.0.0
+    site: mineradora-x-barragem-norte
+    description: >
+      PZ fundação acima do limite de alerta, persistência 30min.
+    level: ALERTA
+    match:
+      sensor: "pz-*-fund-*"
+      metric: pressure_kpa
+    when:
+      direction: above
+      ref: threshold.alerta
+      persistence: PT30M
+      hysteresis_pct: 5.0
+      require_quality: [GOOD]
+    actions: [email, sms, create_incident, increase_sampling]
+
+  - rule_id: pz-emergencia-confirmado
+    version: v1.0.0
+    site: mineradora-x-barragem-norte
+    description: >
+      Confirmação cruzada: 2 ou mais PZ acima do limite de emergência.
+    level: EMERGENCIA_N2
+    match:
+      sensor: "pz-*-fund-*"
+      metric: pressure_kpa
+    when:
+      direction: above
+      ref: threshold.emergencia_n2
+      persistence: PT0S
+      hysteresis_pct: 5.0
+      require_quality: [GOOD]
+      confirm_count: 2
+    actions: [voice, siren, webhook, acionar_paebm]
+
+  - rule_id: ipi-crista-alerta
+    version: v1.0.0
+    site: mineradora-x-barragem-norte
+    description: >
+      Inclinação da crista acima do limite de alerta, módulo absoluto.
+    level: ALERTA
+    match:
+      sensor: "ipi-crista-*"
+      metric: tilt_x_deg
+    when:
+      direction: absolute
+      ref: threshold.alerta
+      persistence: PT1H
+      hysteresis_pct: 10.0
+      require_quality: [GOOD]
+    actions: [email, sms]

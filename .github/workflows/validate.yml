@@ -22,6 +22,8 @@ jobs:
         run: |
           pip install -r tools/requirements.txt
           pip install -r ingestion/requirements.txt
+          pip install -r alerts/requirements.txt
+          pip install -r api/requirements.txt
           pip install pytest
 
       - name: Run full validation (schemas + plans + crosscheck)
@@ -32,6 +34,12 @@ jobs:
 
       - name: Run ingestion unit tests
         run: python3 -m pytest ingestion/tests/ -v
+
+      - name: Run alert engine unit tests
+        run: python3 -m pytest alerts/tests/ -v
+
+      - name: Run read API unit tests
+        run: python3 -m pytest api/tests/ -v
 
       - name: SQL apply (schema + hypertable migration + seed) on TimescaleDB
         run: |

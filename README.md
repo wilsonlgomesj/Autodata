@@ -115,10 +115,76 @@ pip install -r ingestion/requirements.txt pytest
 python3 -m pytest ingestion/tests/ -v
 ```
 
+## Alert engine
+
+Motor de regras declarativas em YAML, versionadas em Git. Avaliador com
+persistência (duração), histerese e confirmação multi-sensor.
+
+```
+alerts/
+├── src/alerts/    rules, evaluator, emitter, service, mqtt_runner, thresholds
+├── rules/         regras YAML versionadas (barragem_x.yaml)
+├── tests/         25 testes (rule parsing, state machine, confirmation)
+├── requirements.txt
+└── Dockerfile
+```
+
+Três mecanismos anti-falso-positivo implementados:
+
+- **persistence**: rule só dispara após N segundos contínuos acima do threshold.
+- **hysteresis**: release só ocorre depois que o valor recua além da banda
+  `threshold × (1 - hysteresis_pct)`.
+- **confirm_count**: EMERGENCIA_N2 só dispara com N sensores simultâneos
+  acima do threshold dentro de janela configurável.
+
+Thresholds são carregados do Postgres (`geo.threshold`) com cache TTL e podem
+também ser literais na regra (`value: 420`).
+
+```bash
+pip install -r alerts/requirements.txt pytest
+python3 -m pytest alerts/tests/ -v
+```
+
+## Read API (GraphQL)
+
+API read-only sobre TimescaleDB. Strawberry + FastAPI. Queries principais:
+
+- `sites`, `site(siteId)`, `structures(siteId)`, `sensors(siteId, ...)`
+- `latestMeasurements(siteId, sensorId)`
+- `timeseries(siteId, sensorId, metric, tFrom, tTo, resolution)` — `resolution`
+  ∈ `raw | 1min | 1h` escolhe entre hypertable bruta e continuous aggregates.
+- `alerts(siteId, level, since, limit)`
+
+```
+api/
+├── src/api/       repository, schema, db, app
+├── tests/         12 testes (repository + GraphQL resolvers)
+├── requirements.txt
+└── Dockerfile
+```
+
+GraphiQL disponível em `http://localhost:8080/graphql` quando `AUTH_DISABLED=true`
+(dev). Em produção, auth via OIDC/Keycloak (stub em `app.require_auth`).
+
+```bash
+pip install -r api/requirements.txt pytest
+python3 -m pytest api/tests/ -v
+```
+
+## Stack de desenvolvimento completo
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+# db + mqtt + ingestion + alerts + api com Barragem X pré-semeada
+# GraphiQL:   http://localhost:8080/graphql
+# Postgres:   localhost:5432 (user autodata / devpassword)
+# MQTT:       localhost:1883
+```
+
 ## Próximos passos
 
-- Motor de regras (OPA Rego) consumindo `threshold` e emitindo `geo.alert.v1`.
 - Firmware de RTU de referência (store-and-forward, assinatura Ed25519).
 - Verificação Ed25519 da assinatura `sig` no ingestion (hoje só checada por regex).
-- Serviço de API (GraphQL + REST) sobre TimescaleDB.
-- Dashboard Grafana com datasource TimescaleDB.
+- Mutations GraphQL: reconhecer alerta, mudar threshold, emitir comando.
+- Dashboard Grafana com datasource TimescaleDB e template dinâmico por site.
+- Motor de notificações (SMS/voz/webhook) consumindo `alert/#`.
